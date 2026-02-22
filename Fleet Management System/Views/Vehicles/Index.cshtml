@@ -1,0 +1,49 @@
+﻿@{
+    ViewData["Title"] = "Vehicles";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Vehicles</h2>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        @(Html.DevExtreme().DataGrid<Fleet_Management_System.DTOs.VehicleReadDto>()
+                .DataSource(ds => ds.Mvc()
+                .Controller("VehiclesApi")
+                .LoadAction("Get")
+                .InsertAction("Post")
+                .UpdateAction("Put")
+                .DeleteAction("Delete")
+                .Key("Id")
+                )
+                .RemoteOperations(true)
+                .HoverStateEnabled(true)
+                .ShowBorders(false)
+                .OnRowClick("onRowClick")
+                .Columns(columns =>
+                {
+                    columns.AddFor(m => m.Id)
+                    .Visible(false)
+                    .FormItem(f => f.Visible(false));
+                    columns.AddFor(m => m.Plate);
+                    columns.AddFor(m => m.Brand);
+                    columns.AddFor(m => m.Model);
+                    columns.AddFor(m => m.InsuranceExpiry);
+                })
+                .Editing(e => e
+                .AllowAdding(true)
+                .AllowUpdating(true)
+                .AllowDeleting(true)
+                )
+                )
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        function onRowClick(e) {
+            window.location.href = '@Url.Action("Details", "Vehicles")/' + e.data.Id;
+        }
+    </script>
+}

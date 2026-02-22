@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Solution Items/docs/">
+    <File Path="../../../Downloads/details-components.png" />
+    <File Path="../../../Downloads/details-drivers.png" />
+    <File Path="../../../Downloads/vehicles.png" />
+  </Folder>
+  <Project Path="Fleet Management System/Fleet Management System.csproj" />
+</Solution>

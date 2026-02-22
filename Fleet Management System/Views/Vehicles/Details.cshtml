@@ -1,0 +1,111 @@
+@model Fleet_Management_System.DTOs.VehicleReadDto
+@{
+    ViewData["Title"] = "Vehicle Details";
+}
+
+<div class="container-fluid p-4">
+    <div class="d-flex align-items-center mb-4">
+        <a href="@Url.Action("Index", "Vehicles")" class="btn btn-outline-secondary me-3">
+            <i class="dx-icon-arrowleft"></i> Back to List
+        </a>
+        <h2 class="mb-0">@Model.Brand @Model.Model</h2>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-light"><strong>General Information</strong></div>
+        <div class="card-body">
+            @(Html.DevExtreme().Form<Fleet_Management_System.DTOs.VehicleReadDto>()
+                        .ID("vehicleForm")
+                        .FormData(Model)
+                        .ReadOnly(true)
+                        .ColCount(2)
+                        .ShowRequiredMark(false)
+                        .Items(items =>
+                        {
+                            items.AddSimpleFor(m => m.Brand);
+                            items.AddSimpleFor(m => m.Model);
+                            items.AddSimpleFor(m => m.Plate);
+                            items.AddSimpleFor(m => m.InsuranceExpiry)
+                            .Editor(e => e.DateBox().DisplayFormat("dd/MM/yyyy"));
+                        })
+                        )
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            @(Html.DevExtreme().TabPanel()
+                        .ID("vehicleDetailsTabs")
+                        .DeferRendering(false)
+                        .Items(items =>
+                        {
+                            items.Add()
+                            .Title("Vehicle Components")
+                            .Icon("box")
+                            .Template(new TemplateName("gridComponentsTemplate"));
+
+                            items.Add()
+                            .Title("Driver History")
+                            .Icon("group")
+                            .Template(new TemplateName("gridDriversTemplate"));
+                        })
+                        )
+        </div>
+    </div>
+</div>
+
+@using (Html.DevExtreme().NamedTemplate("gridComponentsTemplate"))
+{
+    @(Html.DevExtreme().DataGrid<Fleet_Management_System.DTOs.VehicleComponentReadDto>()
+            .DataSource(ds => ds.Mvc()
+                .Controller("VehicleComponentsApi")
+                .LoadAction("Get")
+                .InsertAction("Post")
+                .UpdateAction("Put")
+                .DeleteAction("Delete")
+                .Key("Id")
+                .LoadParams(new { vehicleId = Model.Id })
+            )
+            .OnInitNewRow($"function(e) {{ e.data.VehicleId = {Model.Id}; }}")
+            .RemoteOperations(true)
+            .ShowBorders(true)
+            .Editing(e => e.AllowAdding(true).AllowUpdating(true).AllowDeleting(true))
+            .Columns(columns =>
+            {
+                columns.AddFor(m => m.Name);
+                columns.AddFor(m => m.SerialNumber);
+                columns.AddFor(m => m.InstallationDate)
+                       .DataType(GridColumnDataType.Date)
+                       .Format("dd/MM/yyyy");
+            })
+        )
+}
+
+@using (Html.DevExtreme().NamedTemplate("gridDriversTemplate"))
+{
+    @(Html.DevExtreme().DataGrid<Fleet_Management_System.DTOs.DriverAssignmentReadDto>()
+            .DataSource(ds => ds.Mvc()
+                .Controller("DriverAssignmentsApi")
+                .LoadAction("Get")
+                .InsertAction("Post")
+                .UpdateAction("Put")
+                .DeleteAction("Delete")
+                .Key("Id")
+                .LoadParams(new { vehicleId = Model.Id })
+            )
+            .OnInitNewRow($"function(e) {{ e.data.VehicleId = {Model.Id}; }}")
+            .RemoteOperations(true)
+            .ShowBorders(true)
+            .Editing(e => e.AllowAdding(true).AllowUpdating(true).AllowDeleting(true))
+            .Columns(columns =>
+            {
+                columns.AddFor(m => m.DriverName);
+                columns.AddFor(m => m.StartDate)
+                       .DataType(GridColumnDataType.Date)
+                       .Format("dd/MM/yyyy");
+                columns.AddFor(m => m.EndDate)
+                       .DataType(GridColumnDataType.Date)
+                       .Format("dd/MM/yyyy");
+            })
+        )
+}

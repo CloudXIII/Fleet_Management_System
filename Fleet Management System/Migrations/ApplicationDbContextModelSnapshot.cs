@@ -52,6 +52,7 @@ namespace Fleet_Management_System.Migrations
 
                     b.Property<string>("Brand")
                         .IsRequired()
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("InsuranceExpiry")
@@ -59,10 +60,12 @@ namespace Fleet_Management_System.Migrations
 
                     b.Property<string>("Model")
                         .IsRequired()
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Plate")
                         .IsRequired()
+                        .HasMaxLength(10)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

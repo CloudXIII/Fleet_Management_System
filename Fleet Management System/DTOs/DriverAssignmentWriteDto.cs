@@ -6,7 +6,7 @@ namespace Fleet_Management_System.DTOs
     {
         [Required]
         [StringLength(100)]
-        public string? DriverName { get; set; }
+        public string DriverName { get; set; } = string.Empty;
 
         [Required]
         public DateTime StartDate { get; set; }

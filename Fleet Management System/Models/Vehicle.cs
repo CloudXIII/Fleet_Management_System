@@ -6,11 +6,23 @@ namespace Fleet_Management_System.Models
     {
         [Key]
         public int Id { get; set; }
+
+        [Required]
+        [StringLength(10)]
         public string Plate { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(50)]
         public string Brand { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(50)]
         public string Model { get; set; } = string.Empty;
+
+        [Required]
         public DateTime InsuranceExpiry { get; set; }
 
+        // Navigation properties
         public virtual ICollection<VehicleComponent> Components { get; set; } = [];
         public virtual ICollection<DriverAssignment> Assignments { get; set; } = [];
     }

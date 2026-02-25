@@ -4,7 +4,7 @@
     public class DriverAssignmentReadDto
     {
         public int Id { get; set; }
-        public string? DriverName { get; set; }
+        public string DriverName { get; set; } = string.Empty;
         public DateTime StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public int VehicleId { get; set; }

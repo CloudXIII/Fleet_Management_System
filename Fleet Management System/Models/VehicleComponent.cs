@@ -11,6 +11,7 @@ namespace Fleet_Management_System.Models
         [Required]
         [StringLength(100)]
         public string Name { get; set; } = string.Empty;
+
         [StringLength(50)]
         public string SerialNumber { get; set; } = string.Empty;
 

@@ -1,16 +1,13 @@
-﻿using DevExtreme.AspNet.Data.ResponseModel;
-using DevExtreme.AspNet.Mvc;
-using Fleet_Management_System.DTOs;
+﻿using Fleet_Management_System.DTOs;
 
-namespace Fleet_Management_System.Services
+namespace Fleet_Management_System.Services;
+
+public interface IVehicleService
 {
-    public interface IVehicleService
-    {
-        Task<LoadResult> GetVehiclesAsync(DataSourceLoadOptions loadOptions);
-        Task<VehicleReadDto?> GetVehicleByIdAsync(int id);
-        Task<VehicleWriteDto> GetVehicleForUpdateAsync(int id);
-        Task<int> CreateVehicleAsync(VehicleWriteDto dto);
-        Task UpdateVehicleAsync(int id, VehicleWriteDto dto);
-        Task DeleteVehicleAsync(int key);
-    }
+    Task<IReadOnlyList<VehicleReadDto>> GetVehiclesAsync();
+    Task<VehicleReadDto?> GetVehicleByIdAsync(int id);
+    Task<VehicleWriteDto> GetVehicleForUpdateAsync(int id);
+    Task<VehicleReadDto> CreateVehicleAsync(VehicleWriteDto dto);
+    Task<VehicleReadDto> UpdateVehicleAsync(int id, VehicleWriteDto dto);
+    Task DeleteVehicleAsync(int id);
 }

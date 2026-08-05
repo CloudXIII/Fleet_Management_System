@@ -1,67 +1,61 @@
-﻿using DevExtreme.AspNet.Mvc;
-using Microsoft.AspNetCore.Mvc;
+﻿using Fleet_Management_System.DTOs;
 using Fleet_Management_System.Services;
-using Fleet_Management_System.DTOs;
-using Fleet_Management_System.Extensions;
-using Newtonsoft.Json;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Fleet_Management_System.Controllers;
 
-[Route("api/[controller]/[action]")]
-public class VehicleComponentsApiController(IVehicleComponentService vehicleComponentService) : Controller
+[ApiController]
+[Route("api/vehicle-components")]
+public class VehicleComponentsApiController(IVehicleComponentService vehicleComponentService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> Get(int? vehicleId, DataSourceLoadOptions loadOptions) =>
-        Json(await vehicleComponentService.GetComponentsAsync(vehicleId, loadOptions));
+    public async Task<ActionResult<IReadOnlyList<VehicleComponentReadDto>>> GetAll([FromQuery] int? vehicleId) =>
+        Ok(await vehicleComponentService.GetComponentsAsync(vehicleId));
 
     [HttpPost]
-    public async Task<IActionResult> Post(string values)
+    public async Task<ActionResult<VehicleComponentReadDto>> Create([FromBody] VehicleComponentWriteDto dto)
     {
-        var dto = new VehicleComponentWriteDto();
-        JsonConvert.PopulateObject(values, dto);
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
 
-        if (!TryValidateModel(dto))
-            return BadRequest(ModelState.GetFullErrorMessage());
-
-        var id = await vehicleComponentService.CreateComponentAsync(dto);
-        return Json(new { id });
-    }
-
-    [HttpPut]
-    public async Task<IActionResult> Put(int key, string values)
-    {
         try
         {
-            var dto = await vehicleComponentService.GetComponentForUpdateAsync(key);
-            JsonConvert.PopulateObject(values, dto);
-
-            if (!TryValidateModel(dto))
-                return BadRequest(ModelState.GetFullErrorMessage());
-
-            await vehicleComponentService.UpdateComponentAsync(key, dto);
-            return Ok();
+            var created = await vehicleComponentService.CreateComponentAsync(dto);
+            return CreatedAtAction(nameof(GetAll), new { vehicleId = created.VehicleId }, created);
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            return NotFound(new { message = ex.Message });
         }
     }
 
-    [HttpDelete]
-    public async Task<IActionResult> Delete(int key)
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<VehicleComponentReadDto>> Update(int id, [FromBody] VehicleComponentWriteDto dto)
     {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
         try
         {
-            await vehicleComponentService.DeleteComponentAsync(key);
-            return Ok();
+            return Ok(await vehicleComponentService.UpdateComponentAsync(id, dto));
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            return NotFound(new { message = ex.Message });
         }
     }
 
-    [HttpGet]
-    public async Task<IActionResult> VehiclesLookup(DataSourceLoadOptions loadOptions) =>
-        Json(await vehicleComponentService.GetVehiclesLookupAsync(loadOptions));
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        try
+        {
+            await vehicleComponentService.DeleteComponentAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
 }

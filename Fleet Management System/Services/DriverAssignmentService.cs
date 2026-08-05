@@ -1,8 +1,4 @@
 ﻿using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using DevExtreme.AspNet.Data;
-using DevExtreme.AspNet.Data.ResponseModel;
-using DevExtreme.AspNet.Mvc;
 using Fleet_Management_System.Data;
 using Fleet_Management_System.DTOs;
 using Fleet_Management_System.Models;
@@ -12,17 +8,18 @@ namespace Fleet_Management_System.Services;
 
 public class DriverAssignmentService(ApplicationDbContext context, IMapper mapper) : IDriverAssignmentService
 {
-    public async Task<LoadResult> GetAssignmentsAsync(int? vehicleId, DataSourceLoadOptions loadOptions)
+    public async Task<IReadOnlyList<DriverAssignmentReadDto>> GetAssignmentsAsync(int? vehicleId)
     {
-        var query = context.DriverAssignments.AsQueryable();
+        var query = context.DriverAssignments.AsNoTracking().AsQueryable();
 
         if (vehicleId.HasValue)
             query = query.Where(a => a.VehicleId == vehicleId.Value);
 
-        return await DataSourceLoader.LoadAsync(
-            query.ProjectTo<DriverAssignmentReadDto>(mapper.ConfigurationProvider),
-            loadOptions
-        );
+        var assignments = await query
+            .OrderByDescending(a => a.StartDate)
+            .ToListAsync();
+
+        return assignments.Select(MapAssignment).ToList();
     }
 
     public async Task<DriverAssignmentWriteDto> GetAssignmentForUpdateAsync(int id)
@@ -33,21 +30,29 @@ public class DriverAssignmentService(ApplicationDbContext context, IMapper mappe
         return mapper.Map<DriverAssignmentWriteDto>(entity);
     }
 
-    public async Task<int> CreateAssignmentAsync(DriverAssignmentWriteDto dto)
+    public async Task<DriverAssignmentReadDto> CreateAssignmentAsync(DriverAssignmentWriteDto dto)
     {
+        await EnsureVehicleExists(dto.VehicleId);
+        ValidateDates(dto);
+
         var entity = mapper.Map<DriverAssignment>(dto);
         context.DriverAssignments.Add(entity);
         await context.SaveChangesAsync();
-        return entity.Id;
+
+        return MapAssignment(entity);
     }
 
-    public async Task UpdateAssignmentAsync(int id, DriverAssignmentWriteDto dto)
+    public async Task<DriverAssignmentReadDto> UpdateAssignmentAsync(int id, DriverAssignmentWriteDto dto)
     {
         var entity = await context.DriverAssignments.FindAsync(id)
             ?? throw new KeyNotFoundException($"DriverAssignment {id} not found.");
 
+        await EnsureVehicleExists(dto.VehicleId);
+        ValidateDates(dto);
         mapper.Map(dto, entity);
         await context.SaveChangesAsync();
+
+        return MapAssignment(entity);
     }
 
     public async Task DeleteAssignmentAsync(int id)
@@ -59,12 +64,26 @@ public class DriverAssignmentService(ApplicationDbContext context, IMapper mappe
         await context.SaveChangesAsync();
     }
 
-    public async Task<LoadResult> GetVehiclesLookupAsync(DataSourceLoadOptions loadOptions)
+    private async Task EnsureVehicleExists(int vehicleId)
     {
-        var lookup = context.Vehicles
-            .OrderBy(v => v.Plate)
-            .Select(v => new { Value = v.Id, Text = v.Plate });
-
-        return await DataSourceLoader.LoadAsync(lookup, loadOptions);
+        if (!await context.Vehicles.AnyAsync(v => v.Id == vehicleId))
+            throw new KeyNotFoundException($"Vehicle {vehicleId} not found.");
     }
+
+    private static void ValidateDates(DriverAssignmentWriteDto dto)
+    {
+        if (dto.EndDate.HasValue && dto.EndDate.Value.Date < dto.StartDate.Date)
+            throw new ArgumentException("End date cannot be earlier than start date.");
+    }
+
+    private static DriverAssignmentReadDto MapAssignment(DriverAssignment assignment) =>
+        new()
+        {
+            Id = assignment.Id,
+            DriverName = assignment.DriverName,
+            StartDate = assignment.StartDate,
+            EndDate = assignment.EndDate,
+            VehicleId = assignment.VehicleId,
+            IsActive = !assignment.EndDate.HasValue || assignment.EndDate > DateTime.UtcNow
+        };
 }

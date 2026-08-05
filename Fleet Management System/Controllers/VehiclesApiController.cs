@@ -1,63 +1,61 @@
-﻿using DevExtreme.AspNet.Mvc;
-using Microsoft.AspNetCore.Mvc;
+﻿using Fleet_Management_System.DTOs;
 using Fleet_Management_System.Services;
-using Fleet_Management_System.DTOs;
-using Fleet_Management_System.Extensions;
-using Newtonsoft.Json;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Fleet_Management_System.Controllers;
 
-[Route("api/[controller]/[action]")]
-public class VehiclesApiController(IVehicleService vehicleService) : Controller
+[ApiController]
+[Route("api/vehicles")]
+public class VehiclesApiController(IVehicleService vehicleService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> Get(DataSourceLoadOptions loadOptions) =>
-        Json(await vehicleService.GetVehiclesAsync(loadOptions));
+    public async Task<ActionResult<IReadOnlyList<VehicleReadDto>>> GetAll() =>
+        Ok(await vehicleService.GetVehiclesAsync());
+
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<VehicleReadDto>> GetById(int id)
+    {
+        var vehicle = await vehicleService.GetVehicleByIdAsync(id);
+        return vehicle is null ? NotFound() : Ok(vehicle);
+    }
 
     [HttpPost]
-    public async Task<IActionResult> Post(string values)
+    public async Task<ActionResult<VehicleReadDto>> Create([FromBody] VehicleWriteDto dto)
     {
-        var dto = new VehicleWriteDto();
-        JsonConvert.PopulateObject(values, dto);
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
 
-        if (!TryValidateModel(dto))
-            return BadRequest(ModelState.GetFullErrorMessage());
-
-        var id = await vehicleService.CreateVehicleAsync(dto);
-        return Json(new { id });
+        var created = await vehicleService.CreateVehicleAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
-    [HttpPut]
-    public async Task<IActionResult> Put(int key, string values)
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<VehicleReadDto>> Update(int id, [FromBody] VehicleWriteDto dto)
     {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
         try
         {
-            var dto = await vehicleService.GetVehicleForUpdateAsync(key);
-            JsonConvert.PopulateObject(values, dto);
-
-            if (!TryValidateModel(dto))
-                return BadRequest(ModelState.GetFullErrorMessage());
-
-            await vehicleService.UpdateVehicleAsync(key, dto);
-            return Ok();
+            return Ok(await vehicleService.UpdateVehicleAsync(id, dto));
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            return NotFound(new { message = ex.Message });
         }
     }
 
-    [HttpDelete]
-    public async Task<IActionResult> Delete(int key)
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
     {
         try
         {
-            await vehicleService.DeleteVehicleAsync(key);
-            return Ok();
+            await vehicleService.DeleteVehicleAsync(id);
+            return NoContent();
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            return NotFound(new { message = ex.Message });
         }
     }
 }

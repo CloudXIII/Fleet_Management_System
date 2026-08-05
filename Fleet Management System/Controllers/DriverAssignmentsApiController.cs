@@ -1,67 +1,69 @@
-﻿using DevExtreme.AspNet.Mvc;
-using Microsoft.AspNetCore.Mvc;
+﻿using Fleet_Management_System.DTOs;
 using Fleet_Management_System.Services;
-using Fleet_Management_System.DTOs;
-using Fleet_Management_System.Extensions;
-using Newtonsoft.Json;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Fleet_Management_System.Controllers;
 
-[Route("api/[controller]/[action]")]
-public class DriverAssignmentsApiController(IDriverAssignmentService driverAssignmentService) : Controller
+[ApiController]
+[Route("api/driver-assignments")]
+public class DriverAssignmentsApiController(IDriverAssignmentService driverAssignmentService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> Get(int? vehicleId, DataSourceLoadOptions loadOptions) =>
-        Json(await driverAssignmentService.GetAssignmentsAsync(vehicleId, loadOptions));
+    public async Task<ActionResult<IReadOnlyList<DriverAssignmentReadDto>>> GetAll([FromQuery] int? vehicleId) =>
+        Ok(await driverAssignmentService.GetAssignmentsAsync(vehicleId));
 
     [HttpPost]
-    public async Task<IActionResult> Post(string values)
+    public async Task<ActionResult<DriverAssignmentReadDto>> Create([FromBody] DriverAssignmentWriteDto dto)
     {
-        var dto = new DriverAssignmentWriteDto();
-        JsonConvert.PopulateObject(values, dto);
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
 
-        if (!TryValidateModel(dto))
-            return BadRequest(ModelState.GetFullErrorMessage());
-
-        var id = await driverAssignmentService.CreateAssignmentAsync(dto);
-        return Json(new { id });
-    }
-
-    [HttpPut]
-    public async Task<IActionResult> Put(int key, string values)
-    {
         try
         {
-            var dto = await driverAssignmentService.GetAssignmentForUpdateAsync(key);
-            JsonConvert.PopulateObject(values, dto);
-
-            if (!TryValidateModel(dto))
-                return BadRequest(ModelState.GetFullErrorMessage());
-
-            await driverAssignmentService.UpdateAssignmentAsync(key, dto);
-            return Ok();
+            var created = await driverAssignmentService.CreateAssignmentAsync(dto);
+            return CreatedAtAction(nameof(GetAll), new { vehicleId = created.VehicleId }, created);
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 
-    [HttpDelete]
-    public async Task<IActionResult> Delete(int key)
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<DriverAssignmentReadDto>> Update(int id, [FromBody] DriverAssignmentWriteDto dto)
     {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
         try
         {
-            await driverAssignmentService.DeleteAssignmentAsync(key);
-            return Ok();
+            return Ok(await driverAssignmentService.UpdateAssignmentAsync(id, dto));
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 
-    [HttpGet]
-    public async Task<IActionResult> VehiclesLookup(DataSourceLoadOptions loadOptions) =>
-        Json(await driverAssignmentService.GetVehiclesLookupAsync(loadOptions));
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        try
+        {
+            await driverAssignmentService.DeleteAssignmentAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
 }

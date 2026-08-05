@@ -38,10 +38,6 @@ bld/
 # Uncomment if you have tasks that create the project's static files in wwwroot
 #wwwroot/
 
-# Ignore devextreme libraries
-wwwroot/lib/devextreme/
-wwwroot/css/devextreme/
-wwwroot/js/devextreme/
 
 # --- Project Specific Additions ---
 
@@ -379,3 +375,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+*.db
+*.db-shm
+*.db-wal

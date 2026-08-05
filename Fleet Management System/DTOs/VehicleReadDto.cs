@@ -1,11 +1,20 @@
-﻿namespace Fleet_Management_System.DTOs
+﻿namespace Fleet_Management_System.DTOs;
+
+public class VehicleReadDto
 {
-    public class VehicleReadDto
-    {
-        public int? Id { get; set; }
-        public string Plate { get; set; } = string.Empty;
-        public string Brand { get; set; } = string.Empty;
-        public string Model { get; set; } = string.Empty;
-        public DateTime InsuranceExpiry { get; set; }
-    }
+    public int Id { get; set; }
+    public string Plate { get; set; } = string.Empty;
+    public string Brand { get; set; } = string.Empty;
+    public string Model { get; set; } = string.Empty;
+    public DateTime InsuranceExpiry { get; set; }
+    public InsuranceStatus InsuranceStatus { get; set; }
+    public int ComponentCount { get; set; }
+    public string? ActiveDriver { get; set; }
+}
+
+public enum InsuranceStatus
+{
+    Valid,
+    ExpiringSoon,
+    Expired
 }

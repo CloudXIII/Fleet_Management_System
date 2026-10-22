@@ -1,0 +1,379 @@
+@page "/vehicles/{Id:int}"
+@inject IVehicleService VehicleService
+@inject IVehicleComponentService ComponentService
+@inject IDriverAssignmentService AssignmentService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Vehicle Details - Fleet Manager</PageTitle>
+
+@if (_vehicle is null)
+{
+    if (_notFound)
+    {
+        <MudAlert Severity="Severity.Warning">Vehicle not found.</MudAlert>
+        <MudButton Variant="Variant.Outlined" Href="/vehicles" Class="mt-3">Back to List</MudButton>
+    }
+    else
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+}
+else
+{
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Spacing="2">
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ArrowBack"
+                   Href="/vehicles">
+            Back to List
+        </MudButton>
+        <MudText Typo="Typo.h4">@_vehicle.Brand @_vehicle.Model</MudText>
+    </MudStack>
+
+    <MudPaper Elevation="1" Class="pa-4 mb-4">
+        <MudText Typo="Typo.subtitle1" Class="mb-3"><b>General Information</b></MudText>
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudTextField Value="@_vehicle.Brand" Label="Brand" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField Value="@_vehicle.Model" Label="Model" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField Value="@_vehicle.Plate" Label="Plate" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField Value="@_vehicle.InsuranceExpiry.ToString("dd/MM/yyyy")" Label="Insurance Expiry"
+                              ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudPaper Elevation="1" Class="pa-2">
+        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-2">
+            <MudTabPanel Text="Vehicle Components" Icon="@Icons.Material.Filled.Build">
+                <MudStack Row="true" Justify="Justify.FlexEnd" Class="mb-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateComponent">
+                        Add
+                    </MudButton>
+                </MudStack>
+                <MudDataGrid T="VehicleComponentReadDto" Items="_components" Dense="true" Hover="true"
+                             Loading="_loadingComponents" Filterable="true">
+                    <Columns>
+                        <PropertyColumn Property="x => x.Name" Title="Name" />
+                        <PropertyColumn Property="x => x.SerialNumber" Title="Serial Number" />
+                        <PropertyColumn Property="x => x.InstallationDate" Title="Installation Date"
+                                       Format="dd/MM/yyyy" />
+                        <TemplateColumn Title="Actions" Sortable="false" Filterable="false">
+                            <CellTemplate>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                               Color="Color.Primary"
+                                               OnClick="@(() => OpenEditComponent(context.Item))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                               Color="Color.Error"
+                                               OnClick="@(() => ConfirmDeleteComponentAsync(context.Item))" />
+                            </CellTemplate>
+                        </TemplateColumn>
+                    </Columns>
+                    <NoRecordsContent>
+                        <MudText>No components for this vehicle.</MudText>
+                    </NoRecordsContent>
+                </MudDataGrid>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Driver History" Icon="@Icons.Material.Filled.People">
+                <MudStack Row="true" Justify="Justify.FlexEnd" Class="mb-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateAssignment">
+                        Add
+                    </MudButton>
+                </MudStack>
+                <MudDataGrid T="DriverAssignmentReadDto" Items="_assignments" Dense="true" Hover="true"
+                             Loading="_loadingAssignments" Filterable="true">
+                    <Columns>
+                        <PropertyColumn Property="x => x.DriverName" Title="Driver Name" />
+                        <PropertyColumn Property="x => x.StartDate" Title="Start Date" Format="dd/MM/yyyy" />
+                        <PropertyColumn Property="x => x.EndDate" Title="End Date" Format="dd/MM/yyyy" />
+                        <TemplateColumn Title="Actions" Sortable="false" Filterable="false">
+                            <CellTemplate>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                               Color="Color.Primary"
+                                               OnClick="@(() => OpenEditAssignment(context.Item))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                               Color="Color.Error"
+                                               OnClick="@(() => ConfirmDeleteAssignmentAsync(context.Item))" />
+                            </CellTemplate>
+                        </TemplateColumn>
+                    </Columns>
+                    <NoRecordsContent>
+                        <MudText>No driver assignments for this vehicle.</MudText>
+                    </NoRecordsContent>
+                </MudDataGrid>
+            </MudTabPanel>
+        </MudTabs>
+    </MudPaper>
+}
+
+<MudDialog @ref="_componentDialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(_editingComponentId is null ? "Add Component" : "Edit Component")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_componentModel.Name" Label="Name" Required="true" MaxLength="100" Class="mb-3" />
+        <MudTextField @bind-Value="_componentModel.SerialNumber" Label="Serial Number" MaxLength="50" Class="mb-3" />
+        <MudDatePicker @bind-Date="_installationDate" Label="Installation Date" Required="true"
+                       DateFormat="dd/MM/yyyy" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _componentDialog.CloseAsync())">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveComponentAsync">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<MudDialog @ref="_assignmentDialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(_editingAssignmentId is null ? "Add Driver Assignment" : "Edit Driver Assignment")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_assignmentModel.DriverName" Label="Driver Name" Required="true"
+                      MaxLength="100" Class="mb-3" />
+        <MudDatePicker @bind-Date="_startDate" Label="Start Date" Required="true"
+                       DateFormat="dd/MM/yyyy" Class="mb-3" />
+        <MudDatePicker @bind-Date="_endDate" Label="End Date" Clearable="true" DateFormat="dd/MM/yyyy" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _assignmentDialog.CloseAsync())">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAssignmentAsync">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private static readonly DialogOptions _dialogOptions = new() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    [Parameter]
+    public int Id { get; set; }
+
+    private VehicleReadDto? _vehicle;
+    private bool _notFound;
+    private IReadOnlyList<VehicleComponentReadDto> _components = [];
+    private IReadOnlyList<DriverAssignmentReadDto> _assignments = [];
+    private bool _loadingComponents;
+    private bool _loadingAssignments;
+
+    private MudDialog _componentDialog = default!;
+    private int? _editingComponentId;
+    private VehicleComponentWriteDto _componentModel = new();
+    private DateTime? _installationDate = DateTime.Today;
+
+    private MudDialog _assignmentDialog = default!;
+    private int? _editingAssignmentId;
+    private DriverAssignmentWriteDto _assignmentModel = new();
+    private DateTime? _startDate = DateTime.Today;
+    private DateTime? _endDate;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _vehicle = await VehicleService.GetVehicleByIdAsync(Id);
+        _notFound = _vehicle is null;
+        if (_vehicle is not null)
+        {
+            await ReloadComponentsAsync();
+            await ReloadAssignmentsAsync();
+        }
+    }
+
+    private async Task ReloadComponentsAsync()
+    {
+        _loadingComponents = true;
+        try
+        {
+            _components = await ComponentService.GetComponentsAsync(Id);
+        }
+        finally
+        {
+            _loadingComponents = false;
+        }
+    }
+
+    private async Task ReloadAssignmentsAsync()
+    {
+        _loadingAssignments = true;
+        try
+        {
+            _assignments = await AssignmentService.GetAssignmentsAsync(Id);
+        }
+        finally
+        {
+            _loadingAssignments = false;
+        }
+    }
+
+    private async Task OpenCreateComponent()
+    {
+        _editingComponentId = null;
+        _componentModel = new VehicleComponentWriteDto { VehicleId = Id };
+        _installationDate = DateTime.Today;
+        await _componentDialog.ShowAsync();
+    }
+
+    private async Task OpenEditComponent(VehicleComponentReadDto item)
+    {
+        if (item.Id is not int componentId)
+            return;
+
+        try
+        {
+            var existing = await ComponentService.GetComponentForUpdateAsync(componentId);
+            _editingComponentId = componentId;
+            _componentModel = existing;
+            _installationDate = existing.InstallationDate;
+            await _componentDialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task SaveComponentAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_componentModel.Name) || _installationDate is null)
+        {
+            Snackbar.Add("Please fill in all required fields.", Severity.Warning);
+            return;
+        }
+
+        _componentModel.InstallationDate = _installationDate.Value;
+        _componentModel.VehicleId = Id;
+
+        try
+        {
+            if (_editingComponentId is int componentId)
+            {
+                await ComponentService.UpdateComponentAsync(componentId, _componentModel);
+                Snackbar.Add("Component updated.", Severity.Success);
+            }
+            else
+            {
+                await ComponentService.CreateComponentAsync(_componentModel);
+                Snackbar.Add("Component created.", Severity.Success);
+            }
+
+            await _componentDialog.CloseAsync();
+            await ReloadComponentsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task ConfirmDeleteComponentAsync(VehicleComponentReadDto item)
+    {
+        if (item.Id is not int componentId)
+            return;
+
+        var confirm = await DialogService.ShowMessageBox(
+            "Delete Component",
+            $"Delete component '{item.Name}'?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (confirm is not true)
+            return;
+
+        try
+        {
+            await ComponentService.DeleteComponentAsync(componentId);
+            Snackbar.Add("Component deleted.", Severity.Success);
+            await ReloadComponentsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task OpenCreateAssignment()
+    {
+        _editingAssignmentId = null;
+        _assignmentModel = new DriverAssignmentWriteDto { VehicleId = Id };
+        _startDate = DateTime.Today;
+        _endDate = null;
+        await _assignmentDialog.ShowAsync();
+    }
+
+    private async Task OpenEditAssignment(DriverAssignmentReadDto item)
+    {
+        try
+        {
+            var existing = await AssignmentService.GetAssignmentForUpdateAsync(item.Id);
+            _editingAssignmentId = item.Id;
+            _assignmentModel = existing;
+            _startDate = existing.StartDate;
+            _endDate = existing.EndDate;
+            await _assignmentDialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task SaveAssignmentAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_assignmentModel.DriverName) || _startDate is null)
+        {
+            Snackbar.Add("Please fill in all required fields.", Severity.Warning);
+            return;
+        }
+
+        _assignmentModel.StartDate = _startDate.Value;
+        _assignmentModel.EndDate = _endDate;
+        _assignmentModel.VehicleId = Id;
+
+        try
+        {
+            if (_editingAssignmentId is int assignmentId)
+            {
+                await AssignmentService.UpdateAssignmentAsync(assignmentId, _assignmentModel);
+                Snackbar.Add("Assignment updated.", Severity.Success);
+            }
+            else
+            {
+                await AssignmentService.CreateAssignmentAsync(_assignmentModel);
+                Snackbar.Add("Assignment created.", Severity.Success);
+            }
+
+            await _assignmentDialog.CloseAsync();
+            await ReloadAssignmentsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task ConfirmDeleteAssignmentAsync(DriverAssignmentReadDto item)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Delete Assignment",
+            $"Delete assignment for '{item.DriverName}'?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (confirm is not true)
+            return;
+
+        try
+        {
+            await AssignmentService.DeleteAssignmentAsync(item.Id);
+            Snackbar.Add("Assignment deleted.", Severity.Success);
+            await ReloadAssignmentsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

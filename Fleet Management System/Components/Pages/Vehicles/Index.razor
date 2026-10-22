@@ -1,0 +1,184 @@
+@page "/vehicles"
+@inject IVehicleService VehicleService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Vehicles - Fleet Manager</PageTitle>
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4">Vehicles</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenCreateDialog">
+        Add Vehicle
+    </MudButton>
+</MudStack>
+
+<MudPaper Elevation="1" Class="pa-2">
+    <MudDataGrid T="VehicleReadDto" Items="_vehicles" Dense="true" Hover="true" Loading="_loading"
+                 Filterable="true" SortMode="SortMode.Multiple" RowsPerPage="10"
+                 RowClick="OnRowClick" RowStyle="cursor: pointer;">
+        <Columns>
+            <PropertyColumn Property="x => x.Plate" Title="Plate" />
+            <PropertyColumn Property="x => x.Brand" Title="Brand" />
+            <PropertyColumn Property="x => x.Model" Title="Model" />
+            <PropertyColumn Property="x => x.InsuranceExpiry" Title="Insurance Expiry"
+                           Format="dd/MM/yyyy" />
+            <TemplateColumn Title="Actions" Sortable="false" Filterable="false" CellStyle="width: 140px;">
+                <CellTemplate>
+                    <span @onclick:stopPropagation="true">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary"
+                                       OnClick="@(() => OpenEditDialog(context.Item))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                       OnClick="@(() => ConfirmDeleteAsync(context.Item))" />
+                    </span>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="VehicleReadDto" />
+        </PagerContent>
+        <NoRecordsContent>
+            <MudText>No vehicles found.</MudText>
+        </NoRecordsContent>
+    </MudDataGrid>
+</MudPaper>
+
+<MudDialog @ref="_dialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(_editingId is null ? "Add Vehicle" : "Edit Vehicle")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_editModel.Plate" Label="Plate" Required="true" MaxLength="10" Class="mb-3" />
+        <MudTextField @bind-Value="_editModel.Brand" Label="Brand" Required="true" MaxLength="50" Class="mb-3" />
+        <MudTextField @bind-Value="_editModel.Model" Label="Model" Required="true" MaxLength="50" Class="mb-3" />
+        <MudDatePicker @bind-Date="_insuranceExpiry" Label="Insurance Expiry" Required="true"
+                       DateFormat="dd/MM/yyyy" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseDialogAsync">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private static readonly DialogOptions _dialogOptions = new() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    private MudDialog _dialog = default!;
+    private IReadOnlyList<VehicleReadDto> _vehicles = [];
+    private bool _loading = true;
+    private int? _editingId;
+    private VehicleWriteDto _editModel = new();
+    private DateTime? _insuranceExpiry = DateTime.Today.AddYears(1);
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _vehicles = await VehicleService.GetVehiclesAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnRowClick(DataGridRowClickEventArgs<VehicleReadDto> args)
+    {
+        if (args.Item.Id is int id)
+            Navigation.NavigateTo($"/vehicles/{id}");
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        _editingId = null;
+        _editModel = new VehicleWriteDto();
+        _insuranceExpiry = DateTime.Today.AddYears(1);
+        await _dialog.ShowAsync();
+    }
+
+    private async Task OpenEditDialog(VehicleReadDto vehicle)
+    {
+        if (vehicle.Id is not int id)
+            return;
+
+        try
+        {
+            var existing = await VehicleService.GetVehicleForUpdateAsync(id);
+            _editingId = id;
+            _editModel = existing;
+            _insuranceExpiry = existing.InsuranceExpiry;
+            await _dialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task CloseDialogAsync() => await _dialog.CloseAsync();
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_editModel.Plate)
+            || string.IsNullOrWhiteSpace(_editModel.Brand)
+            || string.IsNullOrWhiteSpace(_editModel.Model)
+            || _insuranceExpiry is null)
+        {
+            Snackbar.Add("Please fill in all required fields.", Severity.Warning);
+            return;
+        }
+
+        _editModel.InsuranceExpiry = _insuranceExpiry.Value;
+
+        try
+        {
+            if (_editingId is int id)
+            {
+                await VehicleService.UpdateVehicleAsync(id, _editModel);
+                Snackbar.Add("Vehicle updated.", Severity.Success);
+            }
+            else
+            {
+                await VehicleService.CreateVehicleAsync(_editModel);
+                Snackbar.Add("Vehicle created.", Severity.Success);
+            }
+
+            await _dialog.CloseAsync();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(VehicleReadDto vehicle)
+    {
+        if (vehicle.Id is not int id)
+            return;
+
+        var confirm = await DialogService.ShowMessageBox(
+            "Delete Vehicle",
+            $"Delete {vehicle.Brand} {vehicle.Model} ({vehicle.Plate})? This also removes related components and assignments.",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (confirm is not true)
+            return;
+
+        try
+        {
+            await VehicleService.DeleteVehicleAsync(id);
+            Snackbar.Add("Vehicle deleted.", Severity.Success);
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

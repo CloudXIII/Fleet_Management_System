@@ -1,5 +1,6 @@
 using Fleet_Management_System.Components;
 using Fleet_Management_System.Data;
+using Fleet_Management_System.Endpoints;
 using Fleet_Management_System.Profiles;
 using Fleet_Management_System.Services;
 using Microsoft.EntityFrameworkCore;
@@ -18,11 +19,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IVehicleService, VehicleService>();
 builder.Services.AddScoped<IVehicleComponentService, VehicleComponentService>();
 builder.Services.AddScoped<IDriverAssignmentService, DriverAssignmentService>();
+builder.Services.AddScoped<IDriverService, DriverService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ISearchService, SearchService>();
 
 builder.Services.AddAutoMapper(cfg => { },
     typeof(VehicleProfile),
     typeof(VehicleComponentProfile),
-    typeof(DriverAssignmentProfile));
+    typeof(DriverAssignmentProfile),
+    typeof(DriverProfile));
 
 var app = builder.Build();
 
@@ -39,6 +44,12 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+app.MapVehicleEndpoints();
+app.MapVehicleComponentEndpoints();
+app.MapDriverAssignmentEndpoints();
+app.MapDriverEndpoints();
+app.MapDashboardEndpoints();
+
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -47,3 +58,5 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+public partial class Program;

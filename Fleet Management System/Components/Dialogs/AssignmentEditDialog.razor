@@ -1,0 +1,106 @@
+@inject IDriverAssignmentService AssignmentService
+@inject IDriverService DriverService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(EditingId is null ? "Add Driver Assignment" : "Edit Driver Assignment")</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-3" Dense="true">@_error</MudAlert>
+        }
+        <EditForm Model="_model" OnValidSubmit="SaveAsync">
+            <DataAnnotationsValidator />
+            <MudSelect T="int" @bind-Value="_model.DriverId" For="@(() => _model.DriverId)"
+                       Label="Driver" Required="true" Class="mb-3">
+                @foreach (var driver in _drivers)
+                {
+                    <MudSelectItem T="int" Value="@driver.Id">@driver.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudDatePicker @bind-Date="_startDate" Label="Start Date" Required="true"
+                           DateFormat="dd/MM/yyyy" Class="mb-3" />
+            <MudDatePicker @bind-Date="_endDate" Label="End Date" Clearable="true"
+                           DateFormat="dd/MM/yyyy" Class="mb-3" />
+            <ValidationMessage For="@(() => _model.EndDate)" />
+            <div class="d-flex justify-end gap-2 mt-2">
+                <MudButton OnClick="Cancel" ButtonType="ButtonType.Button">Cancel</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" ButtonType="ButtonType.Submit"
+                           Disabled="_saving">Save</MudButton>
+            </div>
+        </EditForm>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public int VehicleId { get; set; }
+
+    [Parameter]
+    public int? EditingId { get; set; }
+
+    [Parameter]
+    public DriverAssignmentWriteDto? InitialModel { get; set; }
+
+    private DriverAssignmentWriteDto _model = new();
+    private IReadOnlyList<DriverReadDto> _drivers = [];
+    private DateTime? _startDate = DateTime.Today;
+    private DateTime? _endDate;
+    private bool _saving;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _drivers = await DriverService.GetDriversAsync();
+
+        if (InitialModel is not null)
+        {
+            _model = InitialModel;
+            _startDate = InitialModel.StartDate;
+            _endDate = InitialModel.EndDate;
+        }
+        else
+        {
+            _model = new DriverAssignmentWriteDto { VehicleId = VehicleId };
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task SaveAsync()
+    {
+        if (_startDate is null)
+        {
+            _error = "Start date is required.";
+            return;
+        }
+
+        _model.StartDate = _startDate.Value;
+        _model.EndDate = _endDate;
+        _model.VehicleId = VehicleId;
+        _saving = true;
+        _error = null;
+
+        try
+        {
+            if (EditingId is int id)
+                await AssignmentService.UpdateAssignmentAsync(id, _model);
+            else
+                await AssignmentService.CreateAssignmentAsync(_model);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

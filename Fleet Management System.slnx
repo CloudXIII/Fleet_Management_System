@@ -3,9 +3,10 @@
     <File Path="README.md" />
   </Folder>
   <Folder Name="/Solution Items/docs/">
-    <File Path="../../../Downloads/details-components.png" />
-    <File Path="../../../Downloads/details-drivers.png" />
-    <File Path="../../../Downloads/vehicles.png" />
+    <File Path="docs/details-components.png" />
+    <File Path="docs/details-drivers.png" />
+    <File Path="docs/vehicles.png" />
   </Folder>
   <Project Path="Fleet Management System/Fleet Management System.csproj" />
+  <Project Path="Fleet Management System.Tests/Fleet Management System.Tests.csproj" />
 </Solution>

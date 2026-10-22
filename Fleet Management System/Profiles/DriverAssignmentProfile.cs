@@ -8,7 +8,6 @@ public class DriverAssignmentProfile : Profile
 {
     public DriverAssignmentProfile()
     {
-        CreateMap<DriverAssignment, DriverAssignmentReadDto>();
         CreateMap<DriverAssignment, DriverAssignmentWriteDto>();
         CreateMap<DriverAssignmentWriteDto, DriverAssignment>();
     }

@@ -1,41 +1,49 @@
 # Fleet Management System
 
-A fleet management web application built to demonstrate skills and patterns from a previous role as a junior full-stack developer. The UI was migrated to Blazor + MudBlazor for an open, license-free stack while keeping the same domain model and service-layer architecture.
+A fleet management web application built as a junior full-stack portfolio project. The UI uses Blazor + MudBlazor; the same service layer powers both the interactive UI and a Minimal API.
 
 ## Overview
 
-Fleet Management System lets you manage a vehicle fleet through a clean interface. Each vehicle has a detail page showing its components and driver assignment history, editable via MudBlazor data grids and dialogs.
+Manage a vehicle fleet from a clean Blazor UI: vehicles, components, drivers, and assignment history. A small dashboard surfaces totals and insurance alerts. Sample data is seeded automatically on first run.
 
 ### App Preview
-*Below are some screenshots of the application in action:*
 
-**1. Vehicles Dashboard**
+**1. Vehicles list**
 ![Vehicles dashboard](docs/vehicles.png)
 
-**2. Master-Detail View (Vehicle Components)**
+**2. Master-Detail (Vehicle Components)**
 ![Vehicle Components Tab](docs/details-components.png)
 
-**3. Master-Detail View (Driver History)**
+**3. Master-Detail (Driver History)**
 ![Driver History Tab](docs/details-drivers.png)
 
 ## Features
 
-- Vehicle list with add, edit, and delete (dialog-based)
-- Vehicle detail page with:
-  - General information (read-only form)
-  - Vehicle components management
-  - Driver assignment history
-- Data seeded automatically on first run with realistic sample data
+- Dashboard with vehicle / driver / assignment / insurance counters
+- Vehicle CRUD with unique plate validation and status badges
+- Vehicle detail page: components + driver assignment history
+- Driver entity with dedicated list page
+- Domain rules: one active assignment per vehicle, end date ≥ start date
+- Minimal API REST endpoints reusing the same services as the UI
+- Unit tests covering core business rules
+- Automatic EF migrations + seed data on startup
 
-## Tech Stack
+## Architecture
+
+```
+Blazor UI (MudBlazor) ──┐
+                        ├──► Services + DTOs ──► EF Core (SQLite)
+Minimal API (/api/*) ───┘
+```
 
 | Layer | Technology |
 |---|---|
 | Framework | ASP.NET Core 10 Blazor (Interactive Server) |
+| API | Minimal API |
 | ORM | Entity Framework Core (SQLite) |
-| UI Components | MudBlazor |
+| UI | MudBlazor |
 | Mapping | AutoMapper |
-| Architecture | Service layer + DTOs |
+| Tests | xUnit + EF InMemory |
 
 ## Getting Started
 
@@ -51,4 +59,73 @@ dotnet restore
 dotnet run --launch-profile http
 ```
 
-Open [http://localhost:5090](http://localhost:5090). On first start the app applies EF migrations and seeds sample vehicles, components, and driver assignments.
+Open [http://localhost:5090](http://localhost:5090). On first start the app applies EF migrations and seeds sample vehicles, drivers, components, and assignments.
+
+### Tests
+
+```bash
+dotnet test
+```
+
+### Docker
+
+```bash
+docker build -t fleet-manager .
+docker run --rm -p 8080:8080 fleet-manager
+```
+
+Then open [http://localhost:8080](http://localhost:8080).
+
+## API examples
+
+Base URL: `http://localhost:5090`
+
+```bash
+# List vehicles
+curl http://localhost:5090/api/vehicles
+
+# Get one vehicle
+curl http://localhost:5090/api/vehicles/1
+
+# Create a vehicle
+curl -X POST http://localhost:5090/api/vehicles ^
+  -H "Content-Type: application/json" ^
+  -d "{\"plate\":\"ZZ11 AAA\",\"brand\":\"Ford\",\"model\":\"Transit\",\"insuranceExpiry\":\"2027-01-01\"}"
+
+# List drivers
+curl http://localhost:5090/api/drivers
+
+# Dashboard stats
+curl http://localhost:5090/api/dashboard/stats
+
+# Components for a vehicle
+curl http://localhost:5090/api/vehicles/1/components
+
+# Assignments for a vehicle
+curl http://localhost:5090/api/vehicles/1/assignments
+```
+
+Main endpoint groups:
+
+| Method | Path | Description |
+|---|---|---|
+| GET/POST | `/api/vehicles` | List / create vehicles |
+| GET/PUT/DELETE | `/api/vehicles/{id}` | Vehicle by id |
+| GET/POST | `/api/vehicles/{id}/components` | Components |
+| GET/POST | `/api/vehicles/{id}/assignments` | Assignments |
+| GET/POST | `/api/drivers` | Drivers |
+| GET | `/api/dashboard/stats` | Dashboard counters |
+
+## Decisions
+
+- **Blazor Server** — interactive UI with C# end-to-end, good fit for an internal ops tool demo.
+- **Minimal API** — lightweight REST surface that reuses the same services as the Blazor pages (full-stack without a separate API project).
+- **SQLite** — zero-setup local database for portfolio demos; migrations keep the schema versioned.
+- **Service layer + DTOs** — keeps UI/API thin and business rules (unique plate, single active assignment) testable in isolation.
+
+## What to demo in an interview
+
+1. Dashboard → vehicles list badges → vehicle detail tabs
+2. Try creating a duplicate plate or a second active assignment (validation feedback)
+3. Call `/api/vehicles` and `/api/dashboard/stats` in the browser or with curl
+4. Run `dotnet test` and point to the business-rule tests

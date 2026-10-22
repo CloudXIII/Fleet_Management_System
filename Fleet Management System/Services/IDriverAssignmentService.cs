@@ -9,4 +9,5 @@ public interface IDriverAssignmentService
     Task<int> CreateAssignmentAsync(DriverAssignmentWriteDto dto);
     Task UpdateAssignmentAsync(int id, DriverAssignmentWriteDto dto);
     Task DeleteAssignmentAsync(int id);
+    Task EndActiveAssignmentAsync(int vehicleId);
 }

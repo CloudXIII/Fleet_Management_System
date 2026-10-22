@@ -1,0 +1,146 @@
+@page "/drivers"
+@using Fleet_Management_System.Components.Dialogs
+@using Fleet_Management_System.Components.Shared
+@inject IDriverService DriverService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Drivers - Fleet Manager</PageTitle>
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4">Drivers</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenCreateDialog">
+        Add Driver
+    </MudButton>
+</MudStack>
+
+@if (!_loading && _drivers.Count == 0)
+{
+    <MudPaper Elevation="1">
+        <EmptyState Icon="@Icons.Material.Filled.Person"
+                    Title="No drivers yet"
+                    Message="Register drivers so you can assign them to vehicles."
+                    ActionText="Add Driver"
+                    OnAction="OpenCreateDialog" />
+    </MudPaper>
+}
+else
+{
+    <MudPaper Elevation="1" Class="pa-2">
+        <MudDataGrid T="DriverReadDto" Items="_drivers" Dense="true" Hover="true" Loading="_loading"
+                     Filterable="true" SortMode="SortMode.Multiple" RowsPerPage="10">
+            <Columns>
+                <PropertyColumn Property="x => x.Name" Title="Name" />
+                <PropertyColumn Property="x => x.LicenseNumber" Title="License Number" />
+                <PropertyColumn Property="x => x.Phone" Title="Phone" />
+                <TemplateColumn Title="Actions" Sortable="false" Filterable="false" CellStyle="width: 140px;">
+                    <CellTemplate>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary"
+                                       OnClick="@(() => OpenEditDialog(context.Item))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                       OnClick="@(() => ConfirmDeleteAsync(context.Item))" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="DriverReadDto" />
+            </PagerContent>
+            <NoRecordsContent>
+                <MudText>No drivers found.</MudText>
+            </NoRecordsContent>
+        </MudDataGrid>
+    </MudPaper>
+}
+
+@code {
+    private static readonly DialogOptions DialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        MaxWidth = MaxWidth.Small,
+        FullWidth = true
+    };
+
+    private IReadOnlyList<DriverReadDto> _drivers = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _drivers = await DriverService.GetDriversAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<DriverEditDialog>
+        {
+            { x => x.EditingId, null },
+            { x => x.InitialModel, new DriverWriteDto() }
+        };
+
+        var dialog = await DialogService.ShowAsync<DriverEditDialog>("Add Driver", parameters, DialogOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add("Driver created.", Severity.Success);
+            await ReloadAsync();
+        }
+    }
+
+    private async Task OpenEditDialog(DriverReadDto driver)
+    {
+        try
+        {
+            var existing = await DriverService.GetDriverForUpdateAsync(driver.Id);
+            var parameters = new DialogParameters<DriverEditDialog>
+            {
+                { x => x.EditingId, driver.Id },
+                { x => x.InitialModel, existing }
+            };
+
+            var dialog = await DialogService.ShowAsync<DriverEditDialog>("Edit Driver", parameters, DialogOptions);
+            var result = await dialog.Result;
+            if (result is { Canceled: false })
+            {
+                Snackbar.Add("Driver updated.", Severity.Success);
+                await ReloadAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(DriverReadDto driver)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Delete Driver",
+            $"Delete driver '{driver.Name}'?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (confirm is not true)
+            return;
+
+        try
+        {
+            await DriverService.DeleteDriverAsync(driver.Id);
+            Snackbar.Add("Driver deleted.", Severity.Success);
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

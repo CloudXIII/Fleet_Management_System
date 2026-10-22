@@ -1,8 +1,5 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using DevExtreme.AspNet.Data;
-using DevExtreme.AspNet.Data.ResponseModel;
-using DevExtreme.AspNet.Mvc;
 using Fleet_Management_System.Data;
 using Fleet_Management_System.DTOs;
 using Fleet_Management_System.Models;
@@ -12,11 +9,11 @@ namespace Fleet_Management_System.Services;
 
 public class VehicleService(ApplicationDbContext context, IMapper mapper) : IVehicleService
 {
-    public async Task<LoadResult> GetVehiclesAsync(DataSourceLoadOptions loadOptions)
-    {
-        var query = context.Vehicles.ProjectTo<VehicleReadDto>(mapper.ConfigurationProvider);
-        return await DataSourceLoader.LoadAsync(query, loadOptions);
-    }
+    public async Task<IReadOnlyList<VehicleReadDto>> GetVehiclesAsync() =>
+        await context.Vehicles
+            .OrderBy(v => v.Id)
+            .ProjectTo<VehicleReadDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
 
     public async Task<VehicleReadDto?> GetVehicleByIdAsync(int id) =>
         await context.Vehicles

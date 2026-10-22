@@ -1,16 +1,16 @@
 # Fleet Management System
 
-A fleet management web application built to demonstrate skills and patterns acquired in my previous role as a software developer.
+A fleet management web application built to demonstrate skills and patterns from a previous role as a junior full-stack developer. The UI was migrated to Blazor + MudBlazor for an open, license-free stack while keeping the same domain model and service-layer architecture.
 
 ## Overview
 
-Fleet Management System allows users to manage a vehicle fleet through a clean interface. Each vehicle has a detail page showing its components and driver assignment history, all editable inline via DevExtreme data grids.
+Fleet Management System lets you manage a vehicle fleet through a clean interface. Each vehicle has a detail page showing its components and driver assignment history, editable via MudBlazor data grids and dialogs.
 
 ### App Preview
 *Below are some screenshots of the application in action:*
 
 **1. Vehicles Dashboard**
-![Vehicles dashboard displaying a data grid with a list of fleet vehicles, including columns for vehicle ID, make, model, year, and status. The interface shows inline editing capabilities with action buttons for adding, editing, and deleting vehicles. The layout uses a clean, professional design with DevExtreme components on a light background.](docs/vehicles.png)
+![Vehicles dashboard](docs/vehicles.png)
 
 **2. Master-Detail View (Vehicle Components)**
 ![Vehicle Components Tab](docs/details-components.png)
@@ -20,7 +20,7 @@ Fleet Management System allows users to manage a vehicle fleet through a clean i
 
 ## Features
 
-- Vehicle list with inline add, edit, and delete
+- Vehicle list with add, edit, and delete (dialog-based)
 - Vehicle detail page with:
   - General information (read-only form)
   - Vehicle components management
@@ -31,9 +31,9 @@ Fleet Management System allows users to manage a vehicle fleet through a clean i
 
 | Layer | Technology |
 |---|---|
-| Framework | ASP.NET Core 10 MVC |
+| Framework | ASP.NET Core 10 Blazor (Interactive Server) |
 | ORM | Entity Framework Core (SQLite) |
-| UI Components | DevExtreme (jQuery) |
+| UI Components | MudBlazor |
 | Mapping | AutoMapper |
 | Architecture | Service layer + DTOs |
 
@@ -42,19 +42,13 @@ Fleet Management System allows users to manage a vehicle fleet through a clean i
 ### Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- A licensed copy of [DevExtreme](https://js.devexpress.com/) (jQuery version)
 
-### DevExtreme Setup
+### Run
 
-DevExtreme libraries are not included in this repository due to licensing restrictions.
-After cloning, copy your DevExtreme distribution files into the following folders:
-```text
-Fleet_Management_System/wwwroot/
-├── css/
-│   └── devextreme/
-│       └── dx.light.css (and other required css/icons)
-└── js/
-    └── devextreme/
-        ├── dx.all.js
-        ├── dx.aspnet.data.js
-        └── dx.aspnet.mvc.js
+```bash
+cd "Fleet Management System"
+dotnet restore
+dotnet run --launch-profile http
+```
+
+Open [http://localhost:5090](http://localhost:5090). On first start the app applies EF migrations and seeds sample vehicles, components, and driver assignments.

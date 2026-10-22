@@ -1,8 +1,5 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using DevExtreme.AspNet.Data;
-using DevExtreme.AspNet.Data.ResponseModel;
-using DevExtreme.AspNet.Mvc;
 using Fleet_Management_System.Data;
 using Fleet_Management_System.DTOs;
 using Fleet_Management_System.Models;
@@ -12,18 +9,12 @@ namespace Fleet_Management_System.Services;
 
 public class VehicleComponentService(ApplicationDbContext context, IMapper mapper) : IVehicleComponentService
 {
-    public async Task<LoadResult> GetComponentsAsync(int? vehicleId, DataSourceLoadOptions loadOptions)
-    {
-        var query = context.VehicleComponents.AsQueryable();
-
-        if (vehicleId.HasValue)
-            query = query.Where(c => c.VehicleId == vehicleId.Value);
-
-        return await DataSourceLoader.LoadAsync(
-            query.ProjectTo<VehicleComponentReadDto>(mapper.ConfigurationProvider),
-            loadOptions
-        );
-    }
+    public async Task<IReadOnlyList<VehicleComponentReadDto>> GetComponentsAsync(int vehicleId) =>
+        await context.VehicleComponents
+            .Where(c => c.VehicleId == vehicleId)
+            .OrderBy(c => c.Id)
+            .ProjectTo<VehicleComponentReadDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
 
     public async Task<VehicleComponentWriteDto> GetComponentForUpdateAsync(int id)
     {
@@ -57,14 +48,5 @@ public class VehicleComponentService(ApplicationDbContext context, IMapper mappe
 
         context.VehicleComponents.Remove(entity);
         await context.SaveChangesAsync();
-    }
-
-    public async Task<LoadResult> GetVehiclesLookupAsync(DataSourceLoadOptions loadOptions)
-    {
-        var lookup = context.Vehicles
-            .OrderBy(v => v.Plate)
-            .Select(v => new { Value = v.Id, Text = v.Plate });
-
-        return await DataSourceLoader.LoadAsync(lookup, loadOptions);
     }
 }

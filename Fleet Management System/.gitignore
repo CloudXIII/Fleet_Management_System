@@ -38,11 +38,6 @@ bld/
 # Uncomment if you have tasks that create the project's static files in wwwroot
 #wwwroot/
 
-# Ignore devextreme libraries
-wwwroot/lib/devextreme/
-wwwroot/css/devextreme/
-wwwroot/js/devextreme/
-
 # --- Project Specific Additions ---
 
 # Ignore local SQLite database files
@@ -53,8 +48,6 @@ wwwroot/js/devextreme/
 # Ignore local environment settings (prevents leaking secrets)
 appsettings.Development.json
 
-# Ignore client-side libraries (restore them via Libman instead)
-wwwroot/lib/
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/

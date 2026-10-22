@@ -1,0 +1,11 @@
+**/.git
+**/.vs
+**/bin
+**/obj
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/Fleet Management System.Tests
+**/.cursor
+**/docs
+README.md

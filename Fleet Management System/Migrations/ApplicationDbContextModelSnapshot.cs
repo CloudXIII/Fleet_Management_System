@@ -17,16 +17,38 @@ namespace Fleet_Management_System.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.3");
 
+            modelBuilder.Entity("Fleet_Management_System.Models.Driver", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LicenseNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Drivers");
+                });
+
             modelBuilder.Entity("Fleet_Management_System.Models.DriverAssignment", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("DriverName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
+                    b.Property<int>("DriverId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("TEXT");
@@ -38,6 +60,8 @@ namespace Fleet_Management_System.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DriverId");
 
                     b.HasIndex("VehicleId");
 
@@ -69,6 +93,9 @@ namespace Fleet_Management_System.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Plate")
+                        .IsUnique();
 
                     b.ToTable("Vehicles");
                 });
@@ -104,11 +131,19 @@ namespace Fleet_Management_System.Migrations
 
             modelBuilder.Entity("Fleet_Management_System.Models.DriverAssignment", b =>
                 {
+                    b.HasOne("Fleet_Management_System.Models.Driver", "Driver")
+                        .WithMany("Assignments")
+                        .HasForeignKey("DriverId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Fleet_Management_System.Models.Vehicle", "Vehicle")
                         .WithMany("Assignments")
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Driver");
 
                     b.Navigation("Vehicle");
                 });
@@ -122,6 +157,11 @@ namespace Fleet_Management_System.Migrations
                         .IsRequired();
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("Fleet_Management_System.Models.Driver", b =>
+                {
+                    b.Navigation("Assignments");
                 });
 
             modelBuilder.Entity("Fleet_Management_System.Models.Vehicle", b =>

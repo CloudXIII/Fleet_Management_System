@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@inject ISearchService SearchService
+@inject NavigationManager Navigation
 
 <MudThemeProvider Theme="_theme" />
 <MudPopoverProvider />
@@ -7,12 +9,44 @@
 
 <MudLayout>
     <MudAppBar Elevation="1" Color="Color.Dark">
-        <MudLink Href="/vehicles" Typo="Typo.h6" Color="Color.Inherit" Underline="Underline.None" Class="me-6">
+        <MudLink Href="/" Typo="Typo.h6" Color="Color.Inherit" Underline="Underline.None" Class="me-6">
             Fleet Manager
         </MudLink>
+        <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/">
+            Dashboard
+        </MudButton>
         <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/vehicles">
             Vehicles
         </MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/drivers">
+            Drivers
+        </MudButton>
+        <MudSpacer />
+        <div class="appbar-search no-print">
+            <MudAutocomplete T="SearchResultDto"
+                             Value="_selected"
+                             ValueChanged="OnSearchSelected"
+                             SearchFunc="SearchAsync"
+                             ToStringFunc="FormatResult"
+                             Immediate="true"
+                             CoerceText="false"
+                             CoerceValue="false"
+                             ResetValueOnEmptyText="true"
+                             Clearable="true"
+                             Dense="true"
+                             Variant="Variant.Filled"
+                             Placeholder="Search plate, brand, driver..."
+                             AdornmentIcon="@Icons.Material.Filled.Search"
+                             Adornment="Adornment.Start"
+                             Class="rounded-lg">
+                <ItemTemplate Context="result">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.body2">@result.Type: @result.Label</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@result.Subtitle</MudText>
+                    </MudStack>
+                </ItemTemplate>
+            </MudAutocomplete>
+        </div>
     </MudAppBar>
 
     <MudMainContent>
@@ -21,7 +55,7 @@
         </MudContainer>
     </MudMainContent>
 
-    <footer class="app-footer">
+    <footer class="app-footer no-print">
         <MudText Typo="Typo.caption" Color="Color.Secondary">
             &copy; 2026 Fleet Manager — Built with ASP.NET Core Blazor &amp; MudBlazor — Alessandro Gallo
         </MudText>
@@ -29,6 +63,8 @@
 </MudLayout>
 
 @code {
+    private SearchResultDto? _selected;
+
     private readonly MudTheme _theme = new()
     {
         PaletteLight = new PaletteLight
@@ -39,4 +75,25 @@
             Surface = "#FFFFFF"
         }
     };
+
+    private async Task<IEnumerable<SearchResultDto>> SearchAsync(string value, CancellationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2)
+            return [];
+
+        return await SearchService.SearchAsync(value, 8);
+    }
+
+    private static string FormatResult(SearchResultDto? result) =>
+        result is null ? string.Empty : $"{result.Type}: {result.Label}";
+
+    private void OnSearchSelected(SearchResultDto? result)
+    {
+        _selected = result;
+        if (result is null || string.IsNullOrWhiteSpace(result.Url))
+            return;
+
+        Navigation.NavigateTo(result.Url);
+        _selected = null;
+    }
 }

@@ -1,16 +1,14 @@
 ﻿using AutoMapper;
-using Fleet_Management_System.Models;
 using Fleet_Management_System.DTOs;
+using Fleet_Management_System.Models;
 
-namespace Fleet_Management_System.Profiles
+namespace Fleet_Management_System.Profiles;
+
+public class VehicleProfile : Profile
 {
-    public class VehicleProfile : Profile
+    public VehicleProfile()
     {
-        public VehicleProfile()
-        {
-            CreateMap<Vehicle, VehicleReadDto>();
-            CreateMap<VehicleWriteDto, Vehicle>();
-            CreateMap<Vehicle, VehicleWriteDto>();
-        }
+        CreateMap<VehicleWriteDto, Vehicle>();
+        CreateMap<Vehicle, VehicleWriteDto>();
     }
 }

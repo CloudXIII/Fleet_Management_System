@@ -1,9 +1,119 @@
 @page "/"
+@inject IDashboardService DashboardService
+@inject ISnackbar Snackbar
 @inject NavigationManager Navigation
 
-@code {
-    protected override void OnInitialized()
+<PageTitle>Dashboard - Fleet Manager</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Dashboard</MudText>
+
+@if (_stats is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    @if (_stats.InsuranceExpiringSoon > 0)
     {
-        Navigation.NavigateTo("/vehicles");
+        <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Class="mb-4 insurance-alert-card"
+                  Icon="@Icons.Material.Filled.WarningAmber">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Wrap="Wrap.Wrap">
+                <MudText>
+                    <b>@_stats.InsuranceExpiringSoon</b> vehicle(s) have insurance expiring within 30 days (or already expired).
+                </MudText>
+                <MudButton Variant="Variant.Text" Color="Color.Inherit"
+                           Href="/vehicles?filter=insurance">
+                    Review list
+                </MudButton>
+            </MudStack>
+        </MudAlert>
+    }
+
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="1" Class="pa-4" Style="cursor: pointer;" @onclick='() => Navigation.NavigateTo("/vehicles")'>
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Vehicles</MudText>
+                    <MudText Typo="Typo.h3">@_stats.TotalVehicles</MudText>
+                    <MudText Typo="Typo.caption">In the fleet</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="1" Class="pa-4" Style="cursor: pointer;" @onclick='() => Navigation.NavigateTo("/drivers")'>
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Drivers</MudText>
+                    <MudText Typo="Typo.h3">@_stats.TotalDrivers</MudText>
+                    <MudText Typo="Typo.caption">Registered</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="1" Class="pa-4" Style="cursor: pointer;"
+                      @onclick='() => Navigation.NavigateTo("/vehicles?filter=active")'>
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Active assignments</MudText>
+                    <MudText Typo="Typo.h3">@_stats.ActiveAssignments</MudText>
+                    <MudText Typo="Typo.caption">Drivers currently assigned</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="1" Class="pa-4" Style="cursor: pointer;"
+                      @onclick='() => Navigation.NavigateTo("/vehicles?filter=insurance")'>
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Insurance alerts</MudText>
+                    <MudText Typo="Typo.h3" Color="@(_stats.InsuranceExpiringSoon > 0 ? Color.Warning : Color.Default)">
+                        @_stats.InsuranceExpiringSoon
+                    </MudText>
+                    <MudText Typo="Typo.caption">Expiring within 30 days</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudPaper Elevation="1" Class="pa-4 mt-4">
+        <MudText Typo="Typo.subtitle1" Class="mb-2"><b>Quick actions</b></MudText>
+        <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/vehicles"
+                       StartIcon="@Icons.Material.Filled.DirectionsCar">
+                Manage vehicles
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/drivers"
+                       StartIcon="@Icons.Material.Filled.Person">
+                Manage drivers
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Warning" Href="/vehicles?filter=insurance"
+                       StartIcon="@Icons.Material.Filled.HealthAndSafety">
+                Insurance alerts
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Info" Href="/vehicles?filter=unassigned"
+                       StartIcon="@Icons.Material.Filled.PersonOff">
+                Unassigned vehicles
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+}
+
+@code {
+    private DashboardStatsDto? _stats;
+    private static bool _alertShownThisSession;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _stats = await DashboardService.GetStatsAsync();
+
+        if (_stats.InsuranceExpiringSoon > 0 && !_alertShownThisSession)
+        {
+            _alertShownThisSession = true;
+            Snackbar.Add(
+                $"{_stats.InsuranceExpiringSoon} insurance alert(s) need attention.",
+                Severity.Warning,
+                config =>
+                {
+                    config.VisibleStateDuration = 5000;
+                    config.ShowCloseIcon = true;
+                });
+        }
     }
 }

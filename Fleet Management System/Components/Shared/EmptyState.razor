@@ -1,0 +1,32 @@
+<div class="empty-state">
+    <MudIcon Icon="@Icon" Class="empty-icon" />
+    <MudText Typo="Typo.h6" Class="mb-1">@Title</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4">@Message</MudText>
+    @if (OnAction.HasDelegate && !string.IsNullOrWhiteSpace(ActionText))
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@ActionIcon"
+                   OnClick="OnAction">
+            @ActionText
+        </MudButton>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Icon { get; set; } = Icons.Material.Filled.Inbox;
+
+    [Parameter]
+    public string Title { get; set; } = "Nothing here yet";
+
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? ActionText { get; set; }
+
+    [Parameter]
+    public string ActionIcon { get; set; } = Icons.Material.Filled.Add;
+
+    [Parameter]
+    public EventCallback OnAction { get; set; }
+}

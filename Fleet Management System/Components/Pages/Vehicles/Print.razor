@@ -1,0 +1,138 @@
+@page "/vehicles/{Id:int}/print"
+@layout PrintLayout
+@inject IVehicleService VehicleService
+@inject IVehicleComponentService ComponentService
+@inject IDriverAssignmentService AssignmentService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<PageTitle>Vehicle sheet - Fleet Manager</PageTitle>
+
+@if (_vehicle is null)
+{
+    if (_notFound)
+    {
+        <MudAlert Severity="Severity.Warning">Vehicle not found.</MudAlert>
+    }
+    else
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+}
+else
+{
+    <div class="print-actions no-print">
+        <MudStack Row="true" Spacing="2">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Navigation.NavigateTo($"/vehicles/{Id}"))">
+                Back
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Print" OnClick="PrintAsync">
+                Print / Save as PDF
+            </MudButton>
+        </MudStack>
+    </div>
+
+    <MudPaper Elevation="1" Class="print-sheet">
+        <h1>@_vehicle.Brand @_vehicle.Model</h1>
+        <div class="print-meta">
+            Plate <b>@_vehicle.Plate</b> · Insurance expiry <b>@_vehicle.InsuranceExpiry.ToString("dd/MM/yyyy")</b>
+            · Generated @_generatedAt.ToString("dd/MM/yyyy HH:mm")
+        </div>
+
+        <div class="print-section">
+            <h2>Status</h2>
+            <p>
+                Active driver: <b>@(_vehicle.HasActiveDriver ? "Yes" : "No")</b><br />
+                Insurance alert: <b>@(_vehicle.IsInsuranceExpiringSoon ? "Yes (expiring / expired)" : "No")</b>
+            </p>
+        </div>
+
+        <div class="print-section">
+            <h2>Components (@_components.Count)</h2>
+            @if (_components.Count == 0)
+            {
+                <p>No components recorded.</p>
+            }
+            else
+            {
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Serial</th>
+                            <th>Installed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in _components)
+                        {
+                            <tr>
+                                <td>@c.Name</td>
+                                <td>@c.SerialNumber</td>
+                                <td>@c.InstallationDate.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        <div class="print-section">
+            <h2>Driver history (@_assignments.Count)</h2>
+            @if (_assignments.Count == 0)
+            {
+                <p>No assignments recorded.</p>
+            }
+            else
+            {
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th>Driver</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in _assignments)
+                        {
+                            <tr>
+                                <td>@a.DriverName</td>
+                                <td>@a.StartDate.ToString("dd/MM/yyyy")</td>
+                                <td>@(a.EndDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                <td>@(a.IsActive ? "Active" : "Ended")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </MudPaper>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private VehicleReadDto? _vehicle;
+    private bool _notFound;
+    private IReadOnlyList<VehicleComponentReadDto> _components = [];
+    private IReadOnlyList<DriverAssignmentReadDto> _assignments = [];
+    private readonly DateTime _generatedAt = DateTime.Now;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _vehicle = await VehicleService.GetVehicleByIdAsync(Id);
+        _notFound = _vehicle is null;
+        if (_vehicle is null)
+            return;
+
+        _components = await ComponentService.GetComponentsAsync(Id);
+        _assignments = await AssignmentService.GetAssignmentsAsync(Id);
+    }
+
+    private async Task PrintAsync() => await JS.InvokeVoidAsync("printPage");
+}

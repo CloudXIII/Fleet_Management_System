@@ -17,3 +17,91 @@ html, body {
 .mud-main-content {
     padding-bottom: 4rem !important;
 }
+
+.empty-state {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    color: rgba(0, 0, 0, 0.54);
+}
+
+.empty-state .empty-icon {
+    font-size: 3rem;
+    opacity: 0.45;
+    margin-bottom: 0.75rem;
+}
+
+.appbar-search {
+    max-width: 360px;
+    width: 100%;
+}
+
+.insurance-alert-card {
+    border-left: 4px solid #ed6c02;
+}
+
+.print-sheet {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 2rem;
+}
+
+.print-sheet h1 {
+    margin: 0 0 0.25rem;
+}
+
+.print-meta {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+.print-section {
+    margin-top: 1.5rem;
+}
+
+.print-section h2 {
+    font-size: 1.1rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.75rem;
+}
+
+.print-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.print-table th,
+.print-table td {
+    text-align: left;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
+}
+
+.print-actions {
+    margin-bottom: 1rem;
+}
+
+@media print {
+    .no-print,
+    .mud-appbar,
+    .app-footer,
+    .mud-snackbar-provider {
+        display: none !important;
+    }
+
+    .mud-main-content {
+        padding: 0 !important;
+    }
+
+    .print-sheet {
+        max-width: none;
+        padding: 0;
+        box-shadow: none;
+    }
+
+    body {
+        background: #fff !important;
+    }
+}

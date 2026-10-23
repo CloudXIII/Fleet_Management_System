@@ -8,14 +8,20 @@ Manage a vehicle fleet from a clean Blazor UI: vehicles, components, drivers, an
 
 ### App Preview
 
-**1. Vehicles list**
-![Vehicles dashboard](docs/vehicles.png)
+**1. Dashboard**
+![Dashboard](docs/dashboard.png)
 
-**2. Master-Detail (Vehicle Components)**
+**2. Vehicles list**
+![Vehicles list](docs/vehicles.png)
+
+**3. Vehicle detail — Components**
 ![Vehicle Components Tab](docs/details-components.png)
 
-**3. Master-Detail (Driver History)**
+**4. Vehicle detail — Driver history**
 ![Driver History Tab](docs/details-drivers.png)
+
+**5. Drivers list**
+![Drivers list](docs/drivers.png)
 
 ## Features
 
@@ -122,10 +128,3 @@ Main endpoint groups:
 - **Minimal API** — lightweight REST surface that reuses the same services as the Blazor pages (full-stack without a separate API project).
 - **SQLite** — zero-setup local database for portfolio demos; migrations keep the schema versioned.
 - **Service layer + DTOs** — keeps UI/API thin and business rules (unique plate, single active assignment) testable in isolation.
-
-## What to demo in an interview
-
-1. Dashboard → vehicles list badges → vehicle detail tabs
-2. Try creating a duplicate plate or a second active assignment (validation feedback)
-3. Call `/api/vehicles` and `/api/dashboard/stats` in the browser or with curl
-4. Run `dotnet test` and point to the business-rule tests
